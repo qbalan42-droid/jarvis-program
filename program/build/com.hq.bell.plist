@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Install: sed "s#__HOME__#$HOME#g; s#__NODE__#$(command -v node)#g" com.hq.bell.plist > ~/Library/LaunchAgents/com.hq.bell.plist
+     launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.hq.bell.plist   (or: launchctl load ~/Library/LaunchAgents/com.hq.bell.plist)
+     Check: launchctl list | grep com.hq.bell -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.hq.bell</string>
+  <key>ProgramArguments</key><array><string>__NODE__</string><string>__HOME__/HQ/bin/bell.js</string></array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>__HOME__/HQ/journey/log/bell.out</string>
+  <key>StandardErrorPath</key><string>__HOME__/HQ/journey/log/bell.err</string>
+</dict></plist>

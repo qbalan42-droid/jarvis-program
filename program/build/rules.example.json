@@ -1,0 +1,24 @@
+{
+  "_note": "Example shape. Fill from the interview. 'units' is the person's money unit.",
+  "full_day": { "units": 50, "lights_out": "22:00", "reading_min": 80, "practice_min": 45, "protein_g": 170, "steps": 9000, "audio_min": 60 },
+  "floor": [
+    "Ten units logged in Block 1 before anything else opens",
+    "The Source practice, any length",
+    "One chapter read",
+    "Twenty minutes of movement",
+    "Lights out by 22:30 (full day 22:00)"
+  ],
+  "miss_rule": "The morning after a missed floor day, the cost from the interview is paid before the first unit. Then the day runs normally. A miss is logged X and never argued with.",
+  "if_then": [
+    "When the clock says 07:30, I do the first unit within 60 seconds.",
+    "When a call stings, I stand, take two physiological sighs, and dial the next number before I sit.",
+    "When someone asks for a build during a work block, I say 'after the block' and do the next unit."
+  ],
+  "phone": "Call-only focus from the first block to the hard stop; the interrupt line and the protected people ring through. The phone sleeps in the kitchen from 20:15.",
+  "letters": { "F": "full day: every full_day target met", "L": "floor kept, full day missed", "X": "floor missed", "S": "rest day kept as rest" },
+  "measure": {
+    "daily": [ "units, connects, conversations, booked", "cash number", "RHR, readiness, sleep line" ],
+    "weekly": [ "letters F/L/X/S count", "the one number vs pace", "scale and waist", "the weakest building" ],
+    "decisions": [ "Three X in a week: the floor is too high; lower it on the rest day.", "Readiness under 3 three days running: cut the lift to two exercises and move lights out earlier by 30 min.", "The one number two weeks behind pace: change the weekly plan, not the ninety-day goal." ]
+  }
+}

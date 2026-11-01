@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Source Island</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Manrope:wght@400;600;700;800&display=swap">
+<style>
+/* Source Island (blank). One committed look: a dark glass HUD floating over the 3D island. Tokens here; everything else derives. */
+:root{
+  --bg:#0b1a24; --glass:rgba(10,22,30,.72); --glass2:rgba(10,22,30,.9); --line:rgba(255,255,255,.12);
+  --ink:#eef3f1; --mut:#9fb0b4; --gold:#f2c46d; --teal:#5fd2c4; --rose:#ff7a90; --leaf:#8fd68a; --sky:#8fb6ff;
+  --fD:'Big Shoulders Display','Arial Narrow',Impact,sans-serif; --fB:Manrope,system-ui,-apple-system,'Segoe UI',sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 var(--fB);overflow:hidden;-webkit-font-smoothing:antialiased}
+canvas{position:fixed;inset:0;display:block}
+.glass{background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+button{font:inherit;color:inherit;background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:9px;padding:7px 12px;cursor:pointer}
+button:hover{background:rgba(255,255,255,.14)}button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+button.gold{background:var(--gold);color:#1b1407;border-color:transparent;font-weight:800}
+input,select,textarea{font:inherit;color:var(--ink);background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:8px;padding:7px 9px;min-width:0}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--teal);outline-offset:1px;border-color:transparent}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--gold);padding:0}
+small{color:var(--mut)}
+#loading{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:var(--bg);transition:opacity .7s}
+#loading .t{font:800 54px/1 var(--fD);letter-spacing:.04em;text-transform:uppercase}#loading .t i{color:var(--gold);font-style:normal}
+#loading .s{font:700 12px var(--fB);letter-spacing:.2em;color:var(--mut);margin-top:8px;text-align:center}
+/* HUD */
+#hud{position:fixed;inset:0;pointer-events:none;z-index:5;padding:calc(env(safe-area-inset-top,0px) + 12px) 12px calc(env(safe-area-inset-bottom,0px) + 12px)}
+#hud>*{pointer-events:auto}
+#title{position:absolute;left:12px;top:calc(env(safe-area-inset-top,0px) + 12px);padding:12px 16px;min-width:230px;max-width:min(360px,calc(100vw - 24px))}
+#title .n{font:800 30px/1 var(--fD);letter-spacing:.03em;text-transform:uppercase}
+#title .m{font-size:12px;color:var(--mut);margin-top:4px;max-width:34ch}
+#title .d{display:flex;gap:14px;align-items:center;margin-top:10px}
+#title .d b{font:800 26px/1 var(--fD)}#title .d small{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+#title .lt{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font:800 18px var(--fD);background:rgba(255,255,255,.16)}
+#num{position:absolute;right:12px;top:calc(env(safe-area-inset-top,0px) + 12px);padding:12px 16px;min-width:250px;max-width:min(340px,calc(100vw - 24px))}
+#num .lbl{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--mut)}
+#num .v{font:800 34px/1.05 var(--fD);color:var(--gold);font-variant-numeric:tabular-nums}
+#num .tier{font-weight:700;margin-top:6px}#num .bar{height:6px;border-radius:4px;background:rgba(255,255,255,.1);margin:8px 0 4px;overflow:hidden}#num .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--teal),var(--gold))}
+#num .row{display:flex;gap:8px;align-items:center;margin-top:8px}#num .row input{width:120px}
+#now{position:absolute;left:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);padding:12px 16px;min-width:230px;max-width:min(320px,calc(100vw - 24px))}
+#now .k{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--mut)}#now .b{font:800 22px/1.1 var(--fD);margin-top:2px}
+#now .c{font:800 30px/1 var(--fD);color:var(--teal);margin-top:4px;font-variant-numeric:tabular-nums}#now .nx{font-size:12px;color:var(--mut);margin-top:6px}
+#now .btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}#now .btns button{padding:5px 9px;font-size:12px}
+#today{position:absolute;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);width:min(400px,calc(100vw - 24px));max-height:calc(100vh - 260px);overflow:auto;padding:14px 16px}
+#today h3{font:800 20px/1 var(--fD);letter-spacing:.03em;text-transform:uppercase;margin:0 0 8px}
+#today h4{font:700 10px var(--fB);letter-spacing:.16em;text-transform:uppercase;color:var(--mut);margin:14px 0 6px}
+.item{display:flex;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--line)}.item:first-of-type{border-top:0}
+.item label{flex:1;min-width:0}.item .lv{font-size:11px;color:var(--mut);white-space:nowrap}.item input[type=number]{width:72px;padding:4px 7px}
+.item.on label{color:var(--leaf)}
+#labels{position:fixed;inset:0;pointer-events:none;z-index:4}
+.lab{position:absolute;transform:translate(-50%,-100%);pointer-events:auto;cursor:pointer;background:var(--glass2);border:1px solid var(--line);border-radius:10px;padding:5px 9px;white-space:nowrap;font-size:12px;line-height:1.25}
+.lab b{display:block;font:800 14px var(--fD);letter-spacing:.04em;text-transform:uppercase}.lab small{display:block;font-size:10px}
+.lab .lvp{display:inline-block;margin-left:6px;padding:0 6px;border-radius:999px;background:rgba(242,196,109,.18);color:var(--gold);font-weight:800;font-size:10px}
+#toast{position:fixed;left:50%;top:14%;transform:translateX(-50%);z-index:30;padding:14px 22px;text-align:center;display:none;max-width:min(520px,calc(100vw - 32px))}
+#toast b{display:block;font:800 26px/1 var(--fD);color:var(--gold);letter-spacing:.03em;text-transform:uppercase}
+/* modal (interview, milestones, data) */
+#modal{position:fixed;inset:0;z-index:40;background:rgba(4,10,14,.66);display:none;place-items:center;padding:14px;overflow:auto}
+#modal.open{display:grid}
+#modal .box{width:min(680px,100%);max-height:calc(100vh - 28px);overflow:auto;padding:22px 24px}
+#modal h2{font:800 30px/1 var(--fD);letter-spacing:.03em;text-transform:uppercase;margin:0 0 4px}
+#modal .step{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+#modal .help{color:var(--mut);margin:0 0 14px;max-width:62ch}
+#modal .f{display:grid;gap:8px;margin:10px 0}#modal .f label{display:grid;gap:4px;font-size:12px;color:var(--mut)}
+#modal .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+#modal .arow{display:grid;grid-template-columns:22px 1.2fr 1.3fr 90px 70px;gap:6px;align-items:center;padding:4px 0;border-top:1px solid var(--line)}
+#modal .arow:first-child{border-top:0}
+#modal .nav{display:flex;justify-content:space-between;gap:10px;margin-top:18px;flex-wrap:wrap}
+#modal textarea{width:100%;min-height:160px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace}
+#modal table{width:100%;border-collapse:collapse;font-size:13px}#modal td,#modal th{padding:6px 8px;border-top:1px solid var(--line);text-align:left;vertical-align:top}#modal th{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);border-top:0}
+#modal td input{width:100%}
+.ok{color:var(--leaf)}.warn{color:var(--gold)}.bad{color:var(--rose)}
+@media (max-width:760px){
+  #title{min-width:0;max-width:calc(100vw - 24px);right:12px}#num{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 150px);left:12px;right:12px;max-width:none;min-width:0}
+  #now{left:12px;right:12px;max-width:none;bottom:calc(env(safe-area-inset-bottom,0px) + 12px)}#today{display:none;left:12px;right:12px;width:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);max-height:70vh}
+  body.sheet #today{display:block}body.sheet #now,body.sheet #num{display:none}
+  #modal .arow{grid-template-columns:22px 1fr 1fr;grid-auto-rows:auto}#modal .arow select,#modal .arow input[type=number]{grid-column:span 1}
+}
+@media (prefers-reduced-motion:reduce){#loading{transition:none}}
+</style>
+</head>
+<body>
+<div id="loading"><div><div class="t"><i>SOURCE</i> ISLAND</div><div class="s">A 3D PLACE THAT GROWS WITH YOUR DAYS</div></div></div>
+<div id="labels"></div>
+<div id="hud">
+  <div id="title" class="glass"><div class="n" id="tName">Source Island</div><div class="m" id="tMission">Answer the interview to raise your island.</div>
+    <div class="d"><div><b id="dayN">—</b><small>day of run</small></div><div><b id="kept">—</b><small>days kept</small></div><div class="lt" id="letter" title="Today's letter: F full day · L floor kept · X missed · S rest">—</div></div></div>
+  <div id="num" class="glass"><div class="lbl" id="numLbl">The number</div><div class="v" id="numV">—</div><div class="tier" id="tier">—</div><div class="bar"><i id="tBar" style="width:0%"></i></div><small id="tNext">—</small>
+    <div class="row"><input type="number" id="numIn" placeholder="update" step="any" aria-label="New value"><button id="numSet">Log</button><button id="msBtn" title="Milestones and rewards">Milestones</button></div></div>
+  <div id="now" class="glass"><div class="k" id="nowK">Now</div><div class="b" id="nowB">—</div><div class="c" id="nowC">--:--</div><div class="nx" id="nowN"></div>
+    <div class="btns"><button id="todayBtn">Today</button><button id="ivBtn">Interview</button><button id="dataBtn">Data</button><button id="audioBtn" title="Ocean sound">Sound</button></div></div>
+  <div id="today" class="glass"><h3 id="tdH">Today</h3><div id="tdBody"></div><div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap"><button id="closeSheet">Back to the island</button></div></div>
+</div>
+<div id="toast" class="glass"><b id="toastT">Upgraded</b><span id="toastS"></span></div>
+<div id="modal"><div class="box glass" id="mbox"></div></div>
+<script>
+// ===================== STATE · everything lives in this browser (localStorage). Export from the Data panel to back it up. =====================
+const LS = "sourceIsland.v1";
+const pad = (n) => String(n).padStart(2, "0");
+const localDate = (d = new Date()) => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+const PRESETS = [
+  ["faith", "Faith", "Prayer and reading", "check", 1, "chapel"], ["body", "Body", "Trained or walked", "check", 1, "gym"],
+  ["work", "Work", "Deep work hours", "count", 4, "office"], ["money", "Money", "One money action", "check", 1, "bank"],
+  ["mind", "Mind", "Pages read", "count", 20, "library"], ["craft", "Craft", "Made or shipped something", "check", 1, "studio"],
+  ["home", "Home", "Order, food, rest", "check", 1, "home"], ["people", "People", "Reached out to someone", "check", 1, "pavilion"]];
+const BLOCK_DEFAULTS = [["09:00", "10:45", "Block 1"], ["11:00", "12:30", "Block 2"], ["13:00", "15:30", "Block 3"], ["16:30", "18:00", "Block 4"]];
+function freshState() {
+  return { v: 1, setup: false, created: localDate(),
+    profile: { island: "Source Island", mission: "", source: "", runDays: 90, runStart: localDate(), wake: "06:00", lights: "23:00", restDay: 0, restNote: "", identity: "", missRule: "", teacher: "" },
+    number: { label: "Net worth", unit: "$", start: 0, goal: 10000, by: "" },
+    areas: PRESETS.slice(0, 6).map(([k, name, label, type, target, style]) => ({ k, name, label, type, target, style })),
+    floor: [{ k: "f1", label: "Up by wake time" }, { k: "f2", label: "Prayer or stillness" }, { k: "f3", label: "First work block started" }, { k: "f4", label: "Moved the body 20 min" }, { k: "f5", label: "Lights out on time" }],
+    blocks: BLOCK_DEFAULTS.map(([t, end, name]) => ({ t, end, name })), cuts: ["", "", ""], people: ["", ""], rewards: {},
+    ledger: {}, hist: [], seenTier: -1 };
+}
+let S = (() => { try { const j = JSON.parse(localStorage.getItem(LS) || "null"); if (j && j.v === 1) return Object.assign(freshState(), j); } catch (e) {} return freshState(); })();
+function save() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { console.warn("could not save", e); } window.dispatchEvent(new CustomEvent("island:update")); }
+const todayKey = () => localDate();
+const L = (date = todayKey()) => (S.ledger[date] = S.ledger[date] || { floor: {}, areas: {}, blocks: {} });
+const fmtNum = (v) => { const u = S.number.unit || ""; const n = Number(v) || 0; const s = Math.abs(n) >= 1000 ? n.toLocaleString("en-US", { maximumFractionDigits: 0 }) : n.toLocaleString("en-US", { maximumFractionDigits: 2 }); return u === "$" || u === "€" || u === "£" ? u + s : s + (u ? " " + u : ""); };
+function numberNow() { const h = S.hist; return h.length ? h[h.length - 1].value : S.number.start; }
+function progress() { const a = Number(S.number.start), b = Number(S.number.goal), v = numberNow(); if (b === a) return v >= b ? 1 : 0; return Math.max(0, Math.min(1.5, (v - a) / (b - a))); }
+const TIERS = [[0, "Castaway", "a driftwood shack and a rowboat"], [0.1, "Beachcomber", "the first real rooms"], [0.25, "Islander", "a villa takes shape"], [0.5, "Homesteader", "gardens and a proper harbour"], [0.75, "Harbourmaster", "a marina and a lighthouse"], [1, "Arrived", "the whole island lit"]];
+function tierOf(p = progress()) { let t = 0; TIERS.forEach((x, i) => { if (p >= x[0]) t = i; }); return t; }
+function dayN(date = todayKey()) { const a = new Date(S.profile.runStart + "T12:00:00"), b = new Date(date + "T12:00:00"); return Math.floor((b - a) / 864e5) + 1; }
+function isRest(date = todayKey()) { const rd = S.profile.restDay; if (rd === -1 || rd === "-1" || rd === "") return false; return new Date(date + "T12:00:00").getDay() === Number(rd); }
+function areaMet(a, Ld) { const v = Ld.areas[a.k]; return a.type === "check" ? !!v : (Number(v) || 0) >= Number(a.target || 1); }
+function letterFor(date) {
+  if (date < S.created || dayN(date) < 1) return "—"; if (date > todayKey()) return "·"; if (isRest(date)) return "S";
+  const Ld = S.ledger[date]; if (!Ld) return date < todayKey() ? "X" : "—";
+  const floorAll = S.floor.every(f => Ld.floor[f.k]), areasAll = S.areas.every(a => areaMet(a, Ld));
+  if (floorAll && areasAll) return "F"; if (floorAll) return "L"; return date < todayKey() ? "X" : "—";
+}
+const LCOL = { F: "#f2c46d", L: "#8fd68a", X: "#ff7a90", S: "#8fb6ff", "—": "rgba(255,255,255,.18)", "·": "#2a3940" };
+function daysKept() { let n = 0; for (const d in S.ledger) { const l = letterFor(d); if (l === "F" || l === "L") n++; } return n; }
+function areaDays(a) { let n = 0; for (const d in S.ledger) if (areaMet(a, S.ledger[d])) n++; return n; }
+const AREA_LV = [0, 3, 7, 14, 30, 60]; const lvl = (v, steps) => { let L0 = 0; steps.forEach((s, i) => { if (v >= s) L0 = i; }); return L0; };
+function areaLevel(a) { return lvl(areaDays(a), AREA_LV); }
+function toMin(t) { const [h, m] = String(t || "0:0").split(":").map(Number); return h * 60 + (m || 0); }
+function nowBlock() { const n = new Date(), m = n.getHours() * 60 + n.getMinutes(); const bs = S.blocks.filter(b => b.t && b.end); const cur = bs.find(b => m >= toMin(b.t) && m < toMin(b.end)); const next = bs.filter(b => toMin(b.t) > m).sort((a, b) => toMin(a.t) - toMin(b.t))[0]; return { cur, next, m }; }
+// ===================== HUD =====================
+const $ = (id) => document.getElementById(id);
+function toast(t, s) { $("toastT").textContent = t; $("toastS").textContent = s || ""; $("toast").style.display = "block"; clearTimeout(toast._t); toast._t = setTimeout(() => $("toast").style.display = "none", 5000); }
+function renderHUD() {
+  const p = S.profile; $("tName").textContent = p.island || "Source Island"; $("tMission").textContent = p.mission || "Answer the interview to raise your island.";
+  const dn = dayN(); $("dayN").textContent = (dn >= 1 ? dn : 0) + "/" + p.runDays; $("kept").textContent = daysKept();
+  const lt = letterFor(todayKey()); $("letter").textContent = lt; $("letter").style.background = LCOL[lt] || LCOL["—"]; $("letter").style.color = lt === "F" || lt === "L" || lt === "S" ? "#10202a" : "";
+  const pr = progress(), t = tierOf(pr), nx = TIERS[t + 1]; $("numLbl").textContent = S.number.label || "The number"; $("numV").textContent = fmtNum(numberNow());
+  $("tier").textContent = TIERS[t][1] + " · tier " + t + " · " + TIERS[t][2]; $("tBar").style.width = Math.min(100, pr * 100) + "%";
+  $("tNext").textContent = nx ? "Next at " + fmtNum(Number(S.number.start) + (Number(S.number.goal) - Number(S.number.start)) * nx[0]) + ": " + nx[1] + ", " + nx[2] : "Goal reached. Set a new one in the interview.";
+  if (S.seenTier >= 0 && t > S.seenTier) { toast("Island upgraded", TIERS[t][1] + " · " + TIERS[t][2]); } if (t !== S.seenTier) { S.seenTier = t; try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) {} }
+  tickNow(); renderToday();
+}
+function tickNow() {
+  const { cur, next, m } = nowBlock(), n = new Date();
+  if (isRest()) { $("nowK").textContent = "Rest day"; $("nowB").textContent = S.profile.restNote || "The island rests with you"; $("nowC").textContent = pad(n.getHours()) + ":" + pad(n.getMinutes()); $("nowN").textContent = ""; return; }
+  if (cur) { const left = toMin(cur.end) - m - 1 + (60 - n.getSeconds()) / 60; const mm = Math.max(0, Math.floor(left)), ss = Math.max(0, Math.floor((left - mm) * 60)); $("nowK").textContent = "Now · " + cur.t + "–" + cur.end; $("nowB").textContent = cur.name; $("nowC").textContent = pad(mm) + ":" + pad(ss) + " left"; $("nowN").textContent = next ? "Next: " + next.t + " " + next.name : "Last block of the day"; }
+  else { $("nowK").textContent = pad(n.getHours()) + ":" + pad(n.getMinutes()); $("nowB").textContent = next ? "Next block " + next.t : m < toMin(S.profile.wake) ? "Before wake time" : "Blocks done"; $("nowC").textContent = next ? pad(Math.floor((toMin(next.t) - m) / 60)) + ":" + pad((toMin(next.t) - m) % 60) + " to go" : "—"; $("nowN").textContent = next ? next.name : (S.profile.lights ? "Lights out " + S.profile.lights : ""); }
+}
+setInterval(tickNow, 1000);
+function renderToday() {
+  const Ld = L(), d = todayKey(); let h = "";
+  h += `<h4>The floor · never zero</h4>` + S.floor.map(f => `<div class="item ${Ld.floor[f.k] ? "on" : ""}"><input type="checkbox" id="fl-${f.k}" data-floor="${f.k}" ${Ld.floor[f.k] ? "checked" : ""}><label for="fl-${f.k}">${esc(f.label)}</label></div>`).join("");
+  h += `<h4>Life areas · each one is a building</h4>` + S.areas.map(a => { const on = areaMet(a, Ld); return `<div class="item ${on ? "on" : ""}">` + (a.type === "check" ? `<input type="checkbox" id="ar-${a.k}" data-area="${a.k}" ${Ld.areas[a.k] ? "checked" : ""}><label for="ar-${a.k}">${esc(a.name)} · ${esc(a.label)}</label>` : `<input type="number" id="ar-${a.k}" data-areanum="${a.k}" value="${Ld.areas[a.k] || ""}" placeholder="0" min="0" step="any"><label for="ar-${a.k}">${esc(a.name)} · ${esc(a.label)} <small>/ ${a.target}</small></label>`) + `<span class="lv">lv ${areaLevel(a)} · ${areaDays(a)} days</span></div>`; }).join("");
+  if (S.blocks.some(b => b.t)) h += `<h4>Blocks</h4>` + S.blocks.filter(b => b.t).map((b, i) => `<div class="item ${Ld.blocks[i] ? "on" : ""}"><input type="checkbox" id="bk-${i}" data-block="${i}" ${Ld.blocks[i] ? "checked" : ""}><label for="bk-${i}">${b.t}–${b.end} ${esc(b.name)}</label></div>`).join("");
+  h += `<h4>Note for today</h4><textarea id="noteIn" rows="2" style="width:100%" placeholder="One line. What happened, what you learned.">${esc(Ld.note || "")}</textarea>`;
+  if (S.profile.missRule && Object.values(S.ledger).length && letterFor(prevDay(d)) === "X") h += `<div class="item" style="border-top:0;margin-top:8px"><span class="bad">Yesterday was a miss.</span>&nbsp;<small>${esc(S.profile.missRule)}</small></div>`;
+  $("tdH").textContent = "Today · " + new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+  $("tdBody").innerHTML = h;
+}
+const esc = (s) => String(s || "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const prevDay = (d) => { const x = new Date(d + "T12:00:00"); x.setDate(x.getDate() - 1); return localDate(x); };
+document.addEventListener("change", (e) => {
+  const t = e.target, Ld = L(); if (t.dataset.floor) Ld.floor[t.dataset.floor] = t.checked; else if (t.dataset.area) Ld.areas[t.dataset.area] = t.checked; else if (t.dataset.areanum) Ld.areas[t.dataset.areanum] = Number(t.value) || 0; else if (t.dataset.block) Ld.blocks[t.dataset.block] = t.checked; else if (t.id === "noteIn") Ld.note = t.value; else return;
+  save(); renderHUD();
+});
+$("numSet").onclick = () => { const v = Number($("numIn").value); if (!isFinite(v) || $("numIn").value === "") return; const d = todayKey(); const last = S.hist[S.hist.length - 1]; if (last && last.date === d) last.value = v; else S.hist.push({ date: d, value: v }); $("numIn").value = ""; save(); renderHUD(); };
+$("todayBtn").onclick = () => document.body.classList.add("sheet"); $("closeSheet").onclick = () => document.body.classList.remove("sheet");
+// ===================== MILESTONES · ten steps from start to goal, a reward you choose for each =====================
+function milestones() { const a = Number(S.number.start), b = Number(S.number.goal); return Array.from({ length: 10 }, (_, i) => ({ i: i + 1, at: a + (b - a) * (i + 1) / 10 })); }
+$("msBtn").onclick = () => openModal(`<h2>Milestones</h2><p class="help">Ten steps from ${fmtNum(S.number.start)} to ${fmtNum(S.number.goal)}. Write the reward for each before you reach it, so the win is already decided.</p>
+  <table><tr><th>Step</th><th>At</th><th>Reward</th><th></th></tr>${milestones().map(m => `<tr><td>${m.i}</td><td>${fmtNum(m.at)}</td><td><input data-rw="${m.i}" value="${esc(S.rewards[m.i] || "")}" placeholder="Pick a reward"></td><td class="${numberNow() >= m.at ? "ok" : ""}">${numberNow() >= m.at ? "reached" : ""}</td></tr>`).join("")}</table>
+  <div class="nav"><button id="mClose">Close</button><button class="gold" id="mSave">Save rewards</button></div>`, () => { $("mSave").onclick = () => { document.querySelectorAll("[data-rw]").forEach(i => S.rewards[i.dataset.rw] = i.value); save(); closeModal(); }; $("mClose").onclick = closeModal; });
+// ===================== DATA · export / import / reset =====================
+$("dataBtn").onclick = () => openModal(`<h2>Your data</h2><p class="help">Everything is stored in this browser only. Copy this text somewhere safe now and then; paste it back here on any device to restore.</p>
+  <textarea id="dataTA">${esc(JSON.stringify(S))}</textarea>
+  <div class="nav"><div><button id="dCopy">Copy</button> <button id="dImport">Restore from the text above</button></div><div><button id="dReset">Start over</button> <button class="gold" id="dClose">Close</button></div></div>`, () => {
+  $("dCopy").onclick = () => { const ta = $("dataTA"); ta.select(); try { navigator.clipboard.writeText(ta.value).then(() => toast("Copied", "Paste it into a note or a file")).catch(() => document.execCommand("copy")); } catch (e) {} };
+  $("dImport").onclick = () => { try { const j = JSON.parse($("dataTA").value); if (!j || j.v !== 1) throw 0; S = Object.assign(freshState(), j); save(); closeModal(); renderHUD(); toast("Restored", "Your island is back"); } catch (e) { toast("That text is not island data", "Paste the exact text you copied from this panel"); } };
+  $("dReset").onclick = () => { if (!$("dReset").dataset.armed) { $("dReset").dataset.armed = 1; $("dReset").textContent = "Tap again to erase everything"; $("dReset").className = "bad"; return; } S = freshState(); save(); closeModal(); openInterview(); };
+  $("dClose").onclick = closeModal; });
+function openModal(html, wire) { $("mbox").innerHTML = html; $("modal").classList.add("open"); if (wire) wire(); }
+function closeModal() { $("modal").classList.remove("open"); }
+// ===================== THE INTERVIEW · twelve questions, one screen each. Answers build the island. =====================
+const Q = [
+  { t: "Name the island", h: "This is your place. Give it a name, say in one sentence what the run is for, and name what you return to each morning (your Source). Keep it in your own words.",
+    r: (p) => `<div class="f"><label>Island name<input id="q_island" value="${esc(p.profile.island)}" placeholder="e.g. Harbour of the Second Chance"></label><label>The mission, one sentence<input id="q_mission" value="${esc(p.profile.mission)}" placeholder="What these days are for"></label><label>Your Source, what you return to<input id="q_source" value="${esc(p.profile.source)}" placeholder="Faith, a person, a purpose, a practice"></label></div>`,
+    w: (p) => { p.profile.island = v("q_island") || "Source Island"; p.profile.mission = v("q_mission"); p.profile.source = v("q_source"); } },
+  { t: "The run", h: "A run has an end. 90 days is long enough to change a life and short enough to feel every day. Pick the start date; day 1 begins there.",
+    r: (p) => `<div class="grid2"><label class="f">Days in the run<input id="q_days" type="number" min="7" max="365" value="${p.profile.runDays}"></label><label class="f">Start date<input id="q_start" type="date" value="${p.profile.runStart}"></label></div>`,
+    w: (p) => { p.profile.runDays = Math.max(7, Number(v("q_days")) || 90); p.profile.runStart = v("q_start") || localDate(); } },
+  { t: "The frame of the day", h: "Wake time and lights-out are the two walls everything else leans on. Be honest, not heroic; the point is to keep it every day.",
+    r: (p) => `<div class="grid2"><label class="f">Wake<input id="q_wake" type="time" value="${p.profile.wake}"></label><label class="f">Lights out<input id="q_lights" type="time" value="${p.profile.lights}"></label></div>`,
+    w: (p) => { p.profile.wake = v("q_wake") || "06:00"; p.profile.lights = v("q_lights") || "23:00"; } },
+  { t: "The one number", h: "One number that proves the run worked. Net worth, savings, revenue, bodyweight, pages written, days sober. The island's tiers follow it from start to goal. You log it yourself whenever it changes.",
+    r: (p) => `<div class="grid2"><label class="f">What it is<input id="q_nl" value="${esc(p.number.label)}" placeholder="Net worth"></label><label class="f">Unit<input id="q_nu" value="${esc(p.number.unit)}" placeholder="$, kg, pages"></label><label class="f">Where it is today<input id="q_ns" type="number" step="any" value="${p.number.start}"></label><label class="f">Where it must be by the end<input id="q_ng" type="number" step="any" value="${p.number.goal}"></label></div>`,
+    w: (p) => { p.number.label = v("q_nl") || "The number"; p.number.unit = v("q_nu"); p.number.start = Number(v("q_ns")) || 0; p.number.goal = Number(v("q_ng")) || (p.number.start + 1); p.number.by = p.profile.runStart; } },
+  { t: "Life areas", h: "Pick the parts of your life this run is about. Each becomes a building that levels up from your real days: 3, 7, 14, 30 and 60 days where you met the daily bar. Name the daily bar in a way a yes/no or a number can answer.",
+    r: (p) => `<div>${PRESETS.map(([k, name, label, type, target]) => { const a = p.areas.find(x => x.k === k); return `<div class="arow"><input type="checkbox" data-ak="${k}" ${a ? "checked" : ""}><input data-an="${k}" value="${esc(a ? a.name : name)}"><input data-al="${k}" value="${esc(a ? a.label : label)}" placeholder="daily bar"><select data-at="${k}"><option value="check" ${(a ? a.type : type) === "check" ? "selected" : ""}>yes / no</option><option value="count" ${(a ? a.type : type) === "count" ? "selected" : ""}>a number</option></select><input type="number" data-ag="${k}" value="${a ? a.target : target}" min="1" step="any" title="daily target"></div>`; }).join("")}</div>`,
+    w: (p) => { const out = []; PRESETS.forEach(([k, , , , , style]) => { const on = document.querySelector(`[data-ak="${k}"]`).checked; if (!on) return; out.push({ k, name: document.querySelector(`[data-an="${k}"]`).value || k, label: document.querySelector(`[data-al="${k}"]`).value || "done", type: document.querySelector(`[data-at="${k}"]`).value, target: Number(document.querySelector(`[data-ag="${k}"]`).value) || 1, style }); }); if (out.length) p.areas = out; } },
+  { t: "The floor", h: "The never-zero minimums. On your worst day these still happen, and that day still counts as kept. Three to five lines, each small enough to do sick, tired or travelling. The floor is what makes the run survive.",
+    r: (p) => `<div class="f">${[0, 1, 2, 3, 4].map(i => `<input data-fl="${i}" value="${esc((p.floor[i] || {}).label || "")}" placeholder="${["Up by wake time", "Prayer or stillness", "First work block started", "Moved the body 20 min", "Lights out on time"][i]}">`).join("")}</div>`,
+    w: (p) => { const out = []; [0, 1, 2, 3, 4].forEach(i => { const t = document.querySelector(`[data-fl="${i}"]`).value.trim(); if (t) out.push({ k: "f" + (i + 1), label: t }); }); if (out.length) p.floor = out; } },
+  { t: "Work blocks", h: "When the real work happens. Up to six blocks with a start, an end and a name. The island shows the live block and a countdown, and you tick each one off.",
+    r: (p) => `<div class="f">${[0, 1, 2, 3, 4, 5].map(i => { const b = p.blocks[i] || {}; return `<div class="grid2" style="grid-template-columns:110px 110px 1fr"><input type="time" data-bt="${i}" value="${b.t || ""}"><input type="time" data-be="${i}" value="${b.end || ""}"><input data-bn="${i}" value="${esc(b.name || "")}" placeholder="Block ${i + 1}"></div>`; }).join("")}</div>`,
+    w: (p) => { const out = []; [0, 1, 2, 3, 4, 5].forEach(i => { const t = document.querySelector(`[data-bt="${i}"]`).value, e = document.querySelector(`[data-be="${i}"]`).value, n = document.querySelector(`[data-bn="${i}"]`).value; if (t && e) out.push({ t, end: e, name: n || "Block " + (i + 1) }); }); p.blocks = out; } },
+  { t: "The rest day", h: "One day a week the island rests with you. It gets the letter S, not a miss. Say what that day is for so it stays a rest and not a drift.",
+    r: (p) => `<div class="grid2"><label class="f">Which day<select id="q_rd">${["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((d, i) => `<option value="${i}" ${Number(p.profile.restDay) === i ? "selected" : ""}>${d}</option>`).join("")}<option value="-1" ${Number(p.profile.restDay) === -1 ? "selected" : ""}>No rest day</option></select></label><label class="f">What it is for<input id="q_rn" value="${esc(p.profile.restNote)}" placeholder="Church, family, a long walk, no screens"></label></div>`,
+    w: (p) => { p.profile.restDay = Number(v("q_rd")); p.profile.restNote = v("q_rn"); } },
+  { t: "Two protected people", h: "Two relationships that do not get sacrificed to the run, with a fixed weekly touch each. They show up on your rest day card.",
+    r: (p) => `<div class="f"><input id="q_p1" value="${esc(p.people[0])}" placeholder="Name · what you do together each week"><input id="q_p2" value="${esc(p.people[1])}" placeholder="Name · what you do together each week"></div>`,
+    w: (p) => { p.people = [v("q_p1"), v("q_p2")]; } },
+  { t: "Three cuts", h: "Three things that are out for the length of the run. Name them plainly. They sit on the island as a reminder, not a judge.",
+    r: (p) => `<div class="f">${[0, 1, 2].map(i => `<input data-cut="${i}" value="${esc(p.cuts[i])}" placeholder="Cut ${i + 1}">`).join("")}</div>`,
+    w: (p) => { p.cuts = [0, 1, 2].map(i => document.querySelector(`[data-cut="${i}"]`).value); } },
+  { t: "The miss rule and the sentence", h: "What happens the morning after a missed floor day? Make it a cost you will pay, not a punishment that breaks you, and make it the first thing you do. Then write the one sentence that says who you are during this run.",
+    r: (p) => `<div class="f"><label>Miss rule<input id="q_mr" value="${esc(p.profile.missRule)}" placeholder="e.g. Before anything else, do the floor twice and text my accountability person"></label><label>Identity sentence<input id="q_id" value="${esc(p.profile.identity)}" placeholder="I am someone who..."></label><label>A teacher for this run (optional)<input id="q_tc" value="${esc(p.profile.teacher)}" placeholder="One person or book you learn from each week"></label></div>`,
+    w: (p) => { p.profile.missRule = v("q_mr"); p.profile.identity = v("q_id"); p.profile.teacher = v("q_tc"); } },
+  { t: "Rewards", h: "Ten milestones sit between your start and your goal. Decide the reward for the first three now; the rest can wait until you are closer. A reward you chose in advance is the one you actually take.",
+    r: (p) => { const a = Number(p.number.start), b = Number(p.number.goal); return `<div class="f">${[1, 2, 3].map(i => `<label>At ${fmtNumP(p, a + (b - a) * i / 10)}<input data-rw0="${i}" value="${esc(p.rewards[i] || "")}" placeholder="Something you will actually do"></label>`).join("")}</div>`; },
+    w: (p) => { [1, 2, 3].forEach(i => { const t = document.querySelector(`[data-rw0="${i}"]`).value; if (t) p.rewards[i] = t; }); } },
+];
+const v = (id) => ($(id) ? $(id).value.trim() : "");
+function fmtNumP(p, n) { const u = p.number.unit || ""; const s = Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 }); return u === "$" || u === "€" || u === "£" ? u + s : s + (u ? " " + u : ""); }
+function openInterview(startAt = 0) {
+  const draft = JSON.parse(JSON.stringify(S)); let i = startAt;
+  const show = () => { const q = Q[i]; openModal(`<div class="step">Question ${i + 1} of ${Q.length}</div><h2>${q.t}</h2><p class="help">${q.h}</p>${q.r(draft)}<div class="nav"><div>${i > 0 ? '<button id="qBack">Back</button>' : '<button id="qSkip" title="Keep the defaults for now">Skip the interview</button>'}</div><div><button class="gold" id="qNext">${i === Q.length - 1 ? "Build my island" : "Next"}</button></div></div>`, () => {
+      $("qNext").onclick = () => { q.w(draft); i++; if (i >= Q.length) finish(); else show(); };
+      if ($("qBack")) $("qBack").onclick = () => { q.w(draft); i--; show(); };
+      if ($("qSkip")) $("qSkip").onclick = () => { draft.setup = true; S = draft; save(); closeModal(); renderHUD(); };
+      const first = $("mbox").querySelector("input,select"); if (first) first.focus(); }); };
+  const finish = () => { draft.setup = true; S = draft; save(); closeModal(); renderHUD(); toast("Welcome to " + S.profile.island, "Day " + Math.max(1, dayN()) + " of " + S.profile.runDays + ". Tick the floor every day; the island does the rest."); };
+  show();
+}
+$("ivBtn").onclick = () => openInterview(0);
+window.addEventListener("keydown", (e) => { if (e.key === "Escape" && $("modal").classList.contains("open")) closeModal(); });
+// dev hook for screenshots: seed a sample island (nothing personal)
+window.__seed = () => { const s = freshState(); s.setup = true; s.profile.island = "Example Island"; s.profile.mission = "Ninety days of showing up before the work matters."; s.created = "2026-01-01"; s.profile.runStart = localDate(new Date(Date.now() - 24 * 864e5)); s.number = { label: "Savings", unit: "$", start: 500, goal: 10000 }; s.hist = [{ date: localDate(), value: 4200 }];
+  for (let k = 1; k <= 24; k++) { const d = localDate(new Date(Date.now() - k * 864e5)); const Ld = { floor: {}, areas: {}, blocks: {} }; s.floor.forEach(f => Ld.floor[f.k] = k % 9 !== 0); s.areas.forEach((a, j) => Ld.areas[a.k] = a.type === "check" ? (k + j) % 3 !== 0 : ((k + j) % 3 !== 0 ? a.target : 0)); s.ledger[d] = Ld; } S = s; save(); renderHUD(); };
+renderHUD(); if (!S.setup) setTimeout(() => openInterview(0), 900);
+</script>
+<script type="module">
+import * as THREE from "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js";
+// ===================== SCENE =====================
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+document.body.prepend(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x8fc3e8); scene.fog = new THREE.Fog(0x8fc3e8, 160, 420);
+const camera = new THREE.PerspectiveCamera(26, innerWidth / innerHeight, 0.5, 3000);
+const target = new THREE.Vector3(0, 2.5, 4), orbit = { yaw: 0.7, pitch: 0.38, dist: 120 };
+function placeCam() { const cp = Math.cos(orbit.pitch); camera.position.set(target.x + Math.sin(orbit.yaw) * cp * orbit.dist, target.y + Math.sin(orbit.pitch) * orbit.dist, target.z + Math.cos(orbit.yaw) * cp * orbit.dist); camera.lookAt(target); }
+placeCam();
+const hemi = new THREE.HemisphereLight(0xcfe6ff, 0x3f5a2e, 0.9); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff1d6, 2.2); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -70, right: 70, top: 70, bottom: -70, near: 10, far: 400 }); sun.shadow.bias = -0.0004; scene.add(sun); scene.add(sun.target);
+const MATS = {}; const mat = (c, r = 0.8, m = 0) => MATS[c + "/" + r + "/" + m] || (MATS[c + "/" + r + "/" + m] = new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m }));
+const glowM = (c, i = 1) => new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: i, roughness: 0.6 });
+const B = (w, h, d) => new THREE.BoxGeometry(w, h, d), C = (rt, rb, h, s = 10) => new THREE.CylinderGeometry(rt, rb, h, s), CONE = (r, h, s = 4) => new THREE.ConeGeometry(r, h, s);
+function mesh(geo, m, x, y, z, parent = scene, o = {}) { const M = new THREE.Mesh(geo, typeof m === "number" ? mat(m) : m); M.position.set(x, y, z); if (o.ry) M.rotation.y = o.ry; if (o.rx) M.rotation.x = o.rx; M.castShadow = o.cast !== false; M.receiveShadow = true; parent.add(M); return M; }
+// ---------- terrain: a plateau with a soft shore, two hills, a lagoon bite ----------
+const rnd = (a, b) => a + Math.random() * (b - a);
+function heightAt(x, z) {
+  const r = Math.hypot(x, z - 2); let h = 2.3 * smooth(1 - (r - 30) / 18);
+  h += 3.2 * smooth(1 - Math.hypot(x - 20, z + 22) / 12) + 2.4 * smooth(1 - Math.hypot(x + 24, z + 14) / 10);
+  h += 0.22 * Math.sin(x * 0.45) * Math.cos(z * 0.38) + 0.12 * Math.sin(x * 1.3 + z * 0.9);
+  h -= 1.6 * smooth(1 - Math.hypot(x - 30, z - 18) / 9);
+  return h - 1.2;
+}
+function smooth(t) { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); }
+{ const g = new THREE.PlaneGeometry(190, 190, 120, 120); g.rotateX(-Math.PI / 2); const P = g.attributes.position, col = new Float32Array(P.count * 3), sand = new THREE.Color(0xe9d9a8), grass = new THREE.Color(0x6aa64c), deep = new THREE.Color(0x3f7a33), rock = new THREE.Color(0x8d8a7a);
+  for (let i = 0; i < P.count; i++) { const x = P.getX(i), z = P.getZ(i), h = heightAt(x, z); P.setY(i, h); const c = h < 0.25 ? sand : h < 0.9 ? sand.clone().lerp(grass, (h - 0.25) / 0.65) : h < 2.6 ? grass : h < 3.6 ? grass.clone().lerp(deep, (h - 2.6)) : deep.clone().lerp(rock, Math.min(1, (h - 3.6) / 1.5)); col.set([c.r, c.g, c.b], i * 3); }
+  g.setAttribute("color", new THREE.BufferAttribute(col, 3)); g.computeVertexNormals(); const t = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 })); t.receiveShadow = true; scene.add(t); }
+// water
+const waterG = new THREE.PlaneGeometry(900, 900, 70, 70); waterG.rotateX(-Math.PI / 2); const waterP0 = waterG.attributes.position.array.slice();
+const water = new THREE.Mesh(waterG, new THREE.MeshStandardMaterial({ color: 0x1f8fb0, transparent: true, opacity: 0.86, roughness: 0.22, metalness: 0.15 })); water.position.y = 0; water.receiveShadow = true; scene.add(water);
+const shallow = new THREE.Mesh(new THREE.CircleGeometry(52, 64), new THREE.MeshStandardMaterial({ color: 0x5fd2c4, transparent: true, opacity: 0.35, roughness: 0.3 })); shallow.rotation.x = -Math.PI / 2; shallow.position.set(0, 0.05, 2); scene.add(shallow);
+// ---------- palms ----------
+const trunkG = C(0.12, 0.2, 5.2, 7), leafG = B(0.32, 0.05, 2.6), leafM = mat(0x3f8f3a, 0.9), trunkM = mat(0x8a6a44, 0.9);
+function palm(x, z, s = 1) { const g = new THREE.Group(); g.position.set(x, heightAt(x, z), z); g.rotation.z = rnd(-0.12, 0.12); g.scale.setScalar(s); const t = mesh(trunkG, trunkM, 0, 2.6, 0, g); for (let i = 0; i < 7; i++) { const l = mesh(leafG, leafM, 0, 5.2, 0, g); l.rotation.y = i / 7 * Math.PI * 2; l.rotation.z = -0.55; l.translateX(1.1); } mesh(new THREE.SphereGeometry(0.16, 6, 6), mat(0x6b4a2e), 0.18, 5.05, 0.12, g); scene.add(g); return g; }
+for (let i = 0; i < 46; i++) { const a = rnd(0, Math.PI * 2), r = rnd(33, 42); const x = Math.sin(a) * r, z = 2 + Math.cos(a) * r; if (heightAt(x, z) > 0.1 && Math.abs(x - 2) + Math.abs(z - 46) > 8) palm(x, z, rnd(0.8, 1.25)); }
+for (const [x, z] of [[20, -22], [23, -19], [-24, -14], [-21, -11], [14, 6], [-14, 8], [8, 22], [-9, 24]]) palm(x, z, rnd(0.9, 1.2));
+// ---------- builders: six levels, one style per life area ----------
+const STYLE = { chapel: { wall: 0xf2ede2, roof: 0x5c4a3a }, gym: { wall: 0x5a4636, roof: 0x2f2a26 }, office: { wall: 0x9fc0d8, roof: 0x30414d }, bank: { wall: 0xd9d2c0, roof: 0x6a5a48 }, library: { wall: 0xc9865a, roof: 0x5a3a2a }, studio: { wall: 0x5fb3a8, roof: 0x2d4a46 }, home: { wall: 0xe8c9a0, roof: 0x7a4a2e }, pavilion: { wall: 0xd8c7a6, roof: 0xb8893f }, club: { wall: 0xf3e7cf, roof: 0x8a5a33 } };
+const WIN = glowM(0xffd27a, 0.0); const lamps = [];
+function windows(g, w, h, d, y, n = 2) { for (let i = 0; i < n; i++) { const x = (i - (n - 1) / 2) * (w / (n + 0.2)); mesh(B(0.5, 0.6, 0.06), WIN, x, y, d / 2 + 0.02, g, { cast: false }); } }
+function roofHip(g, w, d, y, h, c) { const r = mesh(CONE(Math.max(w, d) * 0.78, h, 4), c, 0, y + h / 2, 0, g); r.rotation.y = Math.PI / 4; r.scale.set(w / Math.max(w, d), 1, d / Math.max(w, d)); return r; }
+function lantern(g, x, z, y = 0) { mesh(C(0.05, 0.06, 1.6, 6), 0x2a2f36, x, y + 0.8, z, g, { cast: false }); const L0 = mesh(B(0.22, 0.26, 0.22), glowM(0xffc27a, 0.2), x, y + 1.7, z, g, { cast: false }); lamps.push(L0); }
+function build(style, L, g, scale = 1) {
+  const S0 = STYLE[style] || STYLE.home, W = S0.wall, R = S0.roof; g.scale.setScalar(scale); let top = 2;
+  if (L <= 0) { mesh(B(2.2, 1.5, 1.8), 0x9a7a56, 0, 0.75, 0, g); const r = mesh(B(2.6, 0.1, 2.2), 0x6b5a46, 0, 1.6, 0, g); r.rotation.x = 0.16; top = 1.8; }
+  else if (L === 1) { mesh(B(2.8, 1.9, 2.4), W, 0, 0.95, 0, g); roofHip(g, 2.8, 2.4, 1.9, 1.2, R); windows(g, 2.8, 1.9, 2.4, 1.0, 1); top = 3.2; }
+  else if (L === 2) { mesh(B(3.6, 2.4, 3.0), W, 0, 1.2, 0, g); roofHip(g, 3.6, 3.0, 2.4, 1.4, R); windows(g, 3.6, 2.4, 3.0, 1.2, 2); mesh(B(0.7, 1.3, 0.08), 0x4a3426, 0, 0.65, 1.52, g); top = 3.9; }
+  else if (L === 3) { mesh(B(4.2, 2.6, 3.2), W, 0, 1.3, 0, g); roofHip(g, 4.2, 3.2, 2.6, 1.4, R); mesh(B(2.6, 2.2, 2.4), W, 3.2, 1.1, 0.3, g); roofHip(g, 2.6, 2.4, 2.2, 1.0, R).position.x = 3.2; windows(g, 4.2, 2.6, 3.2, 1.3, 3); const pool = mesh(new THREE.CircleGeometry(1.5, 24), new THREE.MeshStandardMaterial({ color: 0x3fb8d8, roughness: 0.1, transparent: true, opacity: 0.9 }), -0.5, 0.06, 3.6, g, { cast: false }); pool.rotation.x = -Math.PI / 2; lantern(g, 2.4, 2.6); top = 4.1; }
+  else if (L === 4) { mesh(B(5.2, 3.2, 4.0), W, 0, 1.6, 0, g); roofHip(g, 5.2, 4.0, 3.2, 1.8, R); windows(g, 5.2, 3.2, 4.0, 1.5, 3); for (const x of [-2, 2]) mesh(C(0.16, 0.18, 3.0, 8), 0xf7f2e6, x, 1.5, 2.4, g); mesh(B(5.6, 0.16, 1.4), R, 0, 3.1, 2.4, g); lantern(g, -3.1, 2.9); lantern(g, 3.1, 2.9); top = 5.2; }
+  else { mesh(B(5.2, 3.2, 4.0), W, 0, 1.6, 0, g); roofHip(g, 5.2, 4.0, 3.2, 1.8, R); windows(g, 5.2, 3.2, 4.0, 1.5, 3); for (const x of [-2, 2]) mesh(C(0.16, 0.18, 3.0, 8), 0xf7f2e6, x, 1.5, 2.4, g); mesh(B(5.6, 0.16, 1.4), R, 0, 3.1, 2.4, g);
+    mesh(B(1.7, 6.2, 1.7), W, -3.4, 3.1, -0.6, g); mesh(CONE(1.35, 1.6, 4), R, -3.4, 7.0, -0.6, g, { ry: Math.PI / 4 }); mesh(C(0.03, 0.03, 2.2, 5), 0x333333, -3.4, 8.8, -0.6, g, { cast: false }); mesh(B(0.9, 0.5, 0.04), 0xf2c46d, -2.95, 9.5, -0.6, g, { cast: false }); lantern(g, -3.1, 2.9); lantern(g, 3.1, 2.9); lantern(g, -5.2, 0.6); top = 9.6; }
+  if (style === "chapel" && L >= 1) { const cy = L >= 3 ? 4.8 : 3.4; mesh(B(0.1, 0.9, 0.1), 0x4a3426, 0, cy + 0.45, 0, g); mesh(B(0.5, 0.1, 0.1), 0x4a3426, 0, cy + 0.6, 0, g); top = Math.max(top, cy + 1); }
+  if (style === "bank" && L >= 2) for (const x of [-1.2, 1.2]) mesh(C(0.14, 0.16, 2.2, 8), 0xf7f2e6, x, 1.1, 1.75, g);
+  if (style === "pavilion" && L >= 1 && L <= 3) for (const x of [-1.2, 1.2]) for (const z of [-0.9, 0.9]) mesh(C(0.09, 0.1, 2.0, 6), 0x6b4a2e, x, 1.0, z, g);
+  if (style === "studio" && L >= 2) mesh(B(1.2, 0.5, 0.06), 0xf2c46d, 0, 2.2, 1.52, g, { cast: false });
+  const pad0 = mesh(C(3.4 * (1 + L * 0.18), 3.6 * (1 + L * 0.18), 0.14, 24), 0xe7dfcf, 0, 0.02, 0, g, { cast: false });
+  return top * scale;
+}
+// ---------- placement ----------
+const G0 = (x, z) => heightAt(x, z);
+const ANG = [-38, -78, -118, -158, 38, 78, 118, 158].map(a => a * Math.PI / 180), RING = 21;
+const groups = {}; const CLUB = { x: 0, z: -2 };
+function spotFor(i) { const a = ANG[i % ANG.length], r = RING + (i >= 8 ? 8 : 0); return { x: Math.sin(a) * r, z: CLUB.z + Math.cos(a) * r }; }
+function ensureGroup(k, x, z, faceX = CLUB.x, faceZ = CLUB.z) { if (groups[k]) return groups[k]; const g = new THREE.Group(); g.position.set(x, G0(x, z), z); g.rotation.y = Math.atan2(faceX - x, faceZ - z); scene.add(g); return groups[k] = { g, level: -1, top: 3, x, z, style: "home", name: k }; }
+function disposeTree(root) { root.traverse(m => { if (m.isMesh) { if (m.geometry !== trunkG && m.geometry !== leafG) m.geometry.dispose(); if (!Object.values(MATS).includes(m.material) && m.material !== WIN) m.material.dispose(); } }); }
+function setLevel(o, L, style, scale = 1) { if (o.level === L && o.style === style) return false; const prev = o.level; while (o.g.children.length) { const c0 = o.g.children[0]; o.g.remove(c0); disposeTree(c0); } for (let i = lamps.length - 1; i >= 0; i--) { let p = lamps[i]; while (p && p !== o.g) p = p.parent; if (p === o.g) lamps.splice(i, 1); } o.top = build(style, L, o.g, scale); o.level = L; o.style = style; if (prev >= 0 && L > prev) toast(o.name + " upgraded", "level " + L); return true; }
+// clubhouse, plaza and fountain
+const club = ensureGroup("club", CLUB.x, CLUB.z, 0, 40); club.name = "The Clubhouse";
+{ const px = 0, pz = 10; mesh(C(4.2, 4.4, 0.3, 32), 0xe7dfcf, px, G0(px, pz) + 0.1, pz, scene, { cast: false }); mesh(C(1.6, 1.8, 0.5, 24), 0xd8cdb5, px, G0(px, pz) + 0.45, pz, scene); const w = mesh(new THREE.CircleGeometry(1.45, 24), new THREE.MeshStandardMaterial({ color: 0x4cc3dd, roughness: 0.05, transparent: true, opacity: 0.9 }), px, G0(px, pz) + 0.72, pz, scene, { cast: false }); w.rotation.x = -Math.PI / 2; mesh(C(0.1, 0.14, 1.4, 8), 0xd8cdb5, px, G0(px, pz) + 1.3, pz, scene); for (const a of [0.8, 2.4, 3.9, 5.5]) lantern(scene, px + Math.sin(a) * 3.6, pz + Math.cos(a) * 3.6, G0(px, pz) + 0.2); }
+// jetty + boat
+{ const z0 = 40, z1 = 58; mesh(B(2.4, 0.3, z1 - z0), 0x8a5a33, 2, 0.45, (z0 + z1) / 2, scene); for (let z = z0 + 2; z < z1; z += 3) for (const e of [-1, 1]) { mesh(C(0.14, 0.14, 1.9, 6), 0x5c3a21, 2 + e * 1.1, -0.3, z, scene); if (((z - z0) / 3) % 2 === 0) lantern(scene, 2 + e * 1.05, z, 0.55); } }
+const boat = new THREE.Group(); boat.position.set(5.6, 0, 52); scene.add(boat); let boatTier = -1;
+function setBoat(t) { if (boatTier === t) return; boatTier = t; while (boat.children.length) { const c0 = boat.children[0]; boat.remove(c0); disposeTree(c0); }
+  if (t < 2) { mesh(B(2.4, 0.5, 1.0), 0x8a6a44, 0, 0.25, 0, boat); mesh(B(0.1, 0.06, 0.9), 0x6b4a2e, 0, 0.55, 0, boat); }
+  else if (t < 4) { mesh(B(3.6, 0.6, 1.3), 0xf3f0e6, 0, 0.3, 0, boat); mesh(C(0.05, 0.06, 4.2, 6), 0x6b4a2e, 0, 2.4, 0, boat); const sail = mesh(B(0.04, 2.8, 1.6), 0xffffff, 0.04, 2.6, 0.85, boat); sail.rotation.y = 0.2; }
+  else { mesh(B(7.0, 0.9, 2.2), 0xffffff, 0, 0.45, 0, boat); mesh(B(3.4, 0.9, 1.7), 0xe8f1f5, -0.6, 1.3, 0, boat); mesh(B(1.6, 0.6, 1.3), 0x30414d, -0.2, 2.0, 0, boat); mesh(C(0.04, 0.05, 3.0, 6), 0x333333, 1.6, 2.6, 0, boat); const r1 = mesh(B(0.5, 0.3, 0.06), 0xf2c46d, 1.85, 3.9, 0, boat, { cast: false }); } }
+// run path: one stone per day of the run, from the jetty to the clubhouse
+let stones = [];
+function buildStones() { stones.forEach(s => { scene.remove(s); s.geometry.dispose(); s.material.dispose(); }); stones = []; const n = Math.max(7, Math.min(365, Number(S.profile.runDays) || 90)); const geo = new THREE.CylinderGeometry(0.3, 0.34, 0.12, 8);
+  for (let i = 0; i < n; i++) { const t = i / (n - 1); const x = 2 - 2.2 * t + Math.sin(t * Math.PI * 2.2) * 2.4, z = 38 - 32 * t; const s = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0xa89f8c, roughness: 0.9 })); s.position.set(x, heightAt(x, z) + 0.08, z); s.receiveShadow = true; scene.add(s); stones.push(s); } }
+function colorStones() { const a = new Date(S.profile.runStart + "T12:00:00"); stones.forEach((s, i) => { const d = new Date(a); d.setDate(a.getDate() + i); const k = localDate(d), lt = letterFor(k); s.material.color.set(lt === "·" ? "#d8d0c0" : lt === "—" ? "#a89f8c" : (LCOL[lt] || "#a89f8c")); s.material.emissive.set(k === todayKey() ? "#ffffff" : "#000000"); s.material.emissiveIntensity = k === todayKey() ? 0.6 : 0; }); }
+// islanders: one per step of the way, plus one per four days kept
+const people = []; const skin = [0xf1c9a5, 0xd9a877, 0xb87d55, 0x8d5a3b, 0x5c3a28], shirts = [0xf2c46d, 0x5fd2c4, 0xff7a90, 0x8fb6ff, 0xffffff, 0xe8863a];
+const PLACES = () => [[0, 12], [2, 30], [0, 6], ...Object.values(groups).filter(o => o !== club).map(o => [o.x + Math.sin(o.g.rotation.y) * 4.5, o.z + Math.cos(o.g.rotation.y) * 4.5])];
+function person() { const g = new THREE.Group(); const sh = shirts[(Math.random() * shirts.length) | 0], sk = skin[(Math.random() * skin.length) | 0]; mesh(new THREE.CapsuleGeometry(0.22, 0.5, 4, 8), sh, 0, 0.62, 0, g); mesh(new THREE.SphereGeometry(0.2, 8, 8), sk, 0, 1.15, 0, g); mesh(new THREE.SphereGeometry(0.21, 8, 8, 0, Math.PI * 2, 0, 1.2), 0x2a1e16, 0, 1.2, 0, g); const p0 = PLACES()[(Math.random() * PLACES().length) | 0]; g.position.set(p0[0], heightAt(p0[0], p0[1]), p0[1]); g.userData = { tgt: null, wait: rnd(0, 3), ph: Math.random() * 7 }; scene.add(g); return g; }
+function setPeople(n) { n = Math.max(0, Math.min(40, n)); while (people.length < n) people.push(person()); while (people.length > n) { const p = people.pop(); scene.remove(p); disposeTree(p); } }
+function stepPeople(dt, t) { const PL = PLACES(); for (const p of people) { const u = p.userData; if (!u.tgt) { if ((u.wait -= dt) > 0) continue; const q = PL[(Math.random() * PL.length) | 0]; u.tgt = new THREE.Vector3(q[0] + rnd(-2, 2), 0, q[1] + rnd(-2, 2)); } const dx = u.tgt.x - p.position.x, dz = u.tgt.z - p.position.z, d = Math.hypot(dx, dz); if (d < 0.3) { u.tgt = null; u.wait = rnd(2, 9); continue; } const sp = 1.6 * dt; p.position.x += dx / d * sp; p.position.z += dz / d * sp; p.position.y = heightAt(p.position.x, p.position.z) + Math.abs(Math.sin(t * 9 + u.ph)) * 0.05; p.rotation.y = Math.atan2(dx, dz); } }
+// ---------- labels (DOM, projected) ----------
+const labelsEl = document.getElementById("labels"); const labels = new Map(); const V3 = new THREE.Vector3();
+function labelFor(k, o, html) { let el = labels.get(k); if (!el) { el = document.createElement("div"); el.className = "lab"; labelsEl.appendChild(el); labels.set(k, el); el.onclick = () => { document.body.classList.add("sheet"); const row = document.getElementById("ar-" + k); if (row) { row.scrollIntoView({ block: "center" }); row.focus(); } }; } el.innerHTML = html; el.dataset.k = k; return el; }
+function placeLabels() { for (const [k, el] of labels) { const o = k === "club" ? club : groups[k]; if (!o) { el.style.display = "none"; continue; } V3.set(o.x, o.g.position.y + o.top + 0.9, o.z).project(camera); const on = V3.z < 1 && Math.abs(V3.x) < 1.1 && Math.abs(V3.y) < 1.1; el.style.display = on ? "" : "none"; if (on) { el.style.left = (V3.x + 1) / 2 * innerWidth + "px"; el.style.top = (1 - V3.y) / 2 * innerHeight + "px"; } } }
+// ---------- apply state → island ----------
+let areaKeys = "";
+function applyState() {
+  const keys = S.areas.map(a => a.k).join(","); if (keys !== areaKeys) { for (const k in groups) if (k !== "club" && !S.areas.find(a => a.k === k)) { const o = groups[k]; scene.remove(o.g); disposeTree(o.g); delete groups[k]; const el = labels.get(k); if (el) { el.remove(); labels.delete(k); } } areaKeys = keys; }
+  S.areas.forEach((a, i) => { const sp = spotFor(i); const o = ensureGroup(a.k, sp.x, sp.z); o.name = a.name; setLevel(o, areaLevel(a), a.style || "home"); const Ld = L(); labelFor(a.k, o, `<b>${esc(a.name)}<span class="lvp">lv ${o.level}</span></b><small>${areaMet(a, Ld) ? "done today ✓" : esc(a.label)}</small>`); });
+  const t = tierOf(); setLevel(club, Math.min(5, t), "club", 1.35); labelFor("club", club, `<b>${esc(S.profile.island)}<span class="lvp">${TIERS[t][1]}</span></b><small>${esc(S.number.label)} · ${fmtNum(numberNow())}</small>`);
+  setBoat(t); if (stones.length !== Math.max(7, Math.min(365, Number(S.profile.runDays) || 90))) buildStones(); colorStones();
+  setPeople(Math.floor(progress() * 20) + Math.floor(daysKept() / 4));
+}
+window.addEventListener("island:update", applyState); applyState();
+// ---------- sky and time ----------
+let todOverride = null; window.__tod = (h) => { todOverride = h; };
+const skyDay = new THREE.Color(0x8fc3e8), skyDusk = new THREE.Color(0xf0a070), skyNight = new THREE.Color(0x0b1a2a), sunDay = new THREE.Color(0xfff1d6), sunDusk = new THREE.Color(0xffb070);
+function hourNow() { if (todOverride != null) return todOverride; const n = new Date(); return n.getHours() + n.getMinutes() / 60; }
+function sky() { const h = hourNow(); const el = Math.sin((h - 6) / 12 * Math.PI); const day = smooth((el + 0.12) / 0.5), dusk = smooth(1 - Math.abs(el) / 0.3) * (el > -0.2 ? 1 : 0);
+  const c = skyNight.clone().lerp(skyDay, day).lerp(skyDusk, dusk * 0.55); scene.background.copy(c); scene.fog.color.copy(c);
+  sun.intensity = 0.15 + 2.2 * day; sun.color.copy(sunDay.clone().lerp(sunDusk, dusk)); hemi.intensity = 0.18 + 0.8 * day; const az = (h - 12) / 12 * Math.PI; sun.position.set(Math.sin(az) * 120, Math.max(8, el * 150), Math.cos(az) * -60); 
+  const night = 1 - day; for (const l of lamps) l.material.emissiveIntensity = 0.15 + 1.6 * night; WIN.emissiveIntensity = 1.4 * night; water.material.color.set(night > 0.6 ? 0x173d55 : 0x1f8fb0); }
+// ---------- camera input ----------
+const ptrs = new Map(); let pinch0 = 0; const cv = renderer.domElement;
+cv.addEventListener("pointerdown", e => { ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); cv.setPointerCapture(e.pointerId); });
+cv.addEventListener("pointermove", e => { const p = ptrs.get(e.pointerId); if (!p) return; if (ptrs.size === 1) { orbit.yaw -= (e.clientX - p.x) * 0.005; orbit.pitch = Math.max(0.12, Math.min(1.2, orbit.pitch + (e.clientY - p.y) * 0.004)); placeCam(); } p.x = e.clientX; p.y = e.clientY; if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); if (pinch0) { orbit.dist = Math.max(40, Math.min(260, orbit.dist * pinch0 / d)); placeCam(); } pinch0 = d; } });
+const up = e => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch0 = 0; }; cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
+cv.addEventListener("wheel", e => { orbit.dist = Math.max(40, Math.min(260, orbit.dist * (1 + e.deltaY * 0.0012))); placeCam(); }, { passive: true });
+addEventListener("resize", () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+// ---------- ocean sound (off until tapped) ----------
+let audio = null; document.getElementById("audioBtn").onclick = () => { if (audio) { audio.ctx.close(); audio = null; return; } const ctx = new (window.AudioContext || window.webkitAudioContext)(); const n = ctx.sampleRate * 4, buf = ctx.createBuffer(1, n, ctx.sampleRate), d = buf.getChannelData(0); let l = 0; for (let i = 0; i < n; i++) { const w = Math.random() * 2 - 1; l = (l + 0.02 * w) / 1.02; d[i] = l * 3.5; } const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true; const g = ctx.createGain(); g.gain.value = 0.18; const lfo = ctx.createOscillator(); lfo.frequency.value = 0.09; const lg = ctx.createGain(); lg.gain.value = 0.1; lfo.connect(lg); lg.connect(g.gain); lfo.start(); const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 900; src.connect(f); f.connect(g); g.connect(ctx.destination); src.start(); audio = { ctx }; };
+// ---------- loop ----------
+const clock = new THREE.Clock(); let first = true, skyT = 0;
+renderer.setAnimationLoop(() => { const dt = Math.min(0.05, clock.getDelta()), t = clock.elapsedTime;
+  const P = waterG.attributes.position; for (let i = 0; i < P.count; i++) { const x = waterP0[i * 3], z = waterP0[i * 3 + 2]; P.setY(i, Math.sin(x * 0.08 + t * 0.9) * 0.18 + Math.cos(z * 0.07 + t * 0.7) * 0.16); } P.needsUpdate = true; waterG.computeVertexNormals();
+  boat.position.y = Math.sin(t * 1.1) * 0.08; boat.rotation.z = Math.sin(t * 0.9) * 0.03; stepPeople(dt, t); if ((skyT += dt) > 1 || first) { sky(); skyT = 0; } placeLabels(); renderer.render(scene, camera);
+  if (first) { first = false; const ld = document.getElementById("loading"); ld.style.opacity = 0; setTimeout(() => ld.style.display = "none", 700); } });
+</script>
+</body>
+</html>
